@@ -14,6 +14,28 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// deletionDetectionEndpoints lists endpoints where records can disappear
+// (non-posted documents that move to posted tables when confirmed in BC)
+var deletionDetectionEndpoints = map[string]bool{
+	"salesQuotes":              true,
+	"salesQuoteLines":          true,
+	"salesOrders":              true,
+	"salesOrderLines":          true,
+	"salesInvoices":            true,
+	"salesInvoiceLines":        true,
+	"salesCreditMemos":         true,
+	"salesCreditMemoLines":     true,
+	"purchaseOrders":           true,
+	"purchaseOrderLines":       true,
+	"purchaseInvoices":         true,
+	"purchaseInvoiceLines":     true,
+	"purchaseCreditMemos":      true,
+	"purchaseCreditMemoLines":  true,
+	"productionOrders":         true,
+	"productionOrderLines":     true,
+	"productionOrderComponents": true,
+}
+
 // Engine orchestrates the sync process
 type Engine struct {
 	cfg        *config.Config
@@ -197,7 +219,8 @@ func (e *Engine) syncEndpoint(ctx context.Context, cfg model.SyncConfig, syncTyp
 	result.Records = len(records)
 
 	// Deletion detection (incremental only): remove records no longer in BC
-	if syncType == "incremental" {
+	// Only run for non-posted documents that can disappear when posted/converted
+	if syncType == "incremental" && deletionDetectionEndpoints[cfg.Endpoint] {
 		bcIDs, err := e.bcClient.FetchAllIDs(ctx, cfg.CompanyID, cfg.Endpoint)
 		if err != nil {
 			e.logger.Warn("deletion detection: fetch BC IDs failed, skipping",
