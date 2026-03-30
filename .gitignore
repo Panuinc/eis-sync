@@ -1,0 +1,4 @@
+.env
+syncd
+syncd.exe
+*.log
