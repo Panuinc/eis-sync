@@ -2,3 +2,5 @@
 syncd
 syncd.exe
 *.log
+*.exe
+*.exe~
